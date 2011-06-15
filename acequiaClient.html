@@ -3,11 +3,16 @@
         <script src='acequiaClient.js'></script>
         <script type='text/javascript'>
             //TODO: have the correct server address be automatically obtained.
-            acConnect('ws://192.168.0.80:9091',function(){
+            acConnect('ws://127.0.0.1:9091',function(){
                 acSend('','/connect','tie372');
             });
             
             acReceive(function(from,command,body){
+    
+                console.log('message recieved');
+                //console.log(from);
+                //console.log(command);
+                //console.log( body)
                 switch(command){
                     case '/connect':
                         if(body[0]<0){
@@ -20,14 +25,39 @@
                     break;
                     
                     case '/getClients':
-                        alert('Currently connected clients: '+body);
+                        console.log('Currently connected clients: '+body);
                     break;
+                    case '/blobCoord':
+                        console.log("blob");
+                        //console.log(body);
+                        moveHand(body[0][0], body[1][0]);
+                    break;
+                    
+                    default:
+                        console.log( 'from ' + from + ' command ' + command + ' body ' + body); 
+                    break;
+                    
                 }
             });
+            function moveHand(x1,y1)
+            {
+                //console.log('x'+x1+' y'+y1);
+                var d = document.getElementById('handIcon');
+                var w = document.width;
+                var h = document.height;
+                var left = x1 * w ; 
+                var top = y1 * h;
+                if( left < w - 120)
+                    d.style.left = left;
+                if( top < h - 120)
+                    d.style.top = top;
+            
+            
+            }
         </script>
     </head>
     
-    <body>
-    
+    <body bgcolor="black">
+    <div id="handIcon" style='z-index:3;position:absolute;opacity:0.8;'><img src="trew_hand.gif"></div>
     </body>
 </html>

@@ -10,16 +10,18 @@ var sys=require('sys'),
     ws=require('./libs/ws/ws/server.js'),
     dgram=require('dgram'),
     netIP=require('./libs/netIP.js'),
-    DEBUG=1,
+    DEBUG=true,
     INTERNAL_IP='',
     OSC_PORT=9090,
     WS_PORT=9091,
     HTTP_PORT=9092,
     TCP_PORT=9093,
-    TIMEOUT=600; //Seconds before kicking idle clients.
+    TIMEOUT=0; //Seconds before kicking idle clients. 0 = don't kick off idle clenits
+
 
 
 //Client array structure.
+//  why not just use an object instead of these constants? cody
 var clients=[],
     TYP_OSC=0,
     TYP_WS=1,
@@ -125,6 +127,7 @@ function lookupClient(protocol,var1,var2){
 
 //Looks up a client based on username.
 function lookupClientUsername(usr){
+    if(!usr) return -1;
     var i;
     for(i=0; i<clients.length; i++){
         if(clients[i][USER_NAME]==usr){
@@ -137,6 +140,8 @@ function lookupClientUsername(usr){
 
 //Kicks any clients who we have not heard from for a while.
 function kickIdle(){
+    if(TIMEOUT <=0 )
+        return;
     var time=(new Date()).getTime(),
         i;
     for(i=0; i<clients.length; i++){
@@ -147,13 +152,26 @@ function kickIdle(){
     }
 }
 
+    function printObj( ob)
+    {
+        debug( JSON.stringify(ob) );
+    }
 
 //Drops a client from the server (they disconnect, timeout, error, etc.)
-function dropClient(client,reason){
-    if(clients[client]===undefined){return;}
-    debug('Dropped client #'+client+' ('+clients[client][USER_NAME]+') from server.  ('+reason+')');
-    clients.splice(client,1);
-    nextClientId--;
+function dropClient(clientName,reason){
+    var i;
+    if(typeof(clientName) == "string"){
+        i = lookupClientUsername(clientName);
+    }
+    if( typeof(clientName) == "number"){
+        i = clientName;
+    }
+
+    if( i >= 0 && i < nextClientId ){
+        debug('Dropped client #'+i+' ('+clients[i][USER_NAME]+') from server.  ('+reason+')');
+        clients.splice(i,1);
+        nextClientId--;
+    }
 }
 
 
@@ -166,6 +184,7 @@ function start(){
         startServers();
     }
     else{
+        
         netIP.getNetworkIP(function(error,ip){
             INTERNAL_IP=ip;
             startServers();
@@ -183,39 +202,60 @@ function start(){
         oscServer=dgram.createSocket('udp4');
         oscServer.on('message',function(msg,rinfo){
             var oscMsg=osc.bufferToOsc(msg);
-            
-            switch(oscMsg.address){
-                case "/connect":
-                    //If they send us the connect message, add them to the list of clients.
-                    clients[nextClientId]=[];
-                    clients[nextClientId][USER_PROTOCOL]=TYP_OSC;
-                    clients[nextClientId][USER_NAME]=oscMsg.data[0];
-                    clients[nextClientId][USER_IP]=rinfo.address;
-                    clients[nextClientId][USER_PORT_IN]=rinfo.port;
-                    if(oscMsg.data[1]>0){clients[nextClientId][USER_PORT_OUT]=oscMsg.data[1];} //the second parameter when logging in is an optional 'port to send to'.
-                    else{clients[nextClientId][USER_PORT_OUT]=rinfo.port;}
-                    clients[nextClientId][USER_LAST_MSG]=(new Date()).getTime();
-                    nextClientId++;
-                    debug('Added client '+oscMsg.data[0]+' (OSC@'+rinfo.address+':'+rinfo.port+', client #'+(nextClientId-1)+')');
-                break;
+            //printObj(oscMsg);
+
+            if(oscMsg.address=='#bundle'){
+                var bundle; 
+                bundle=osc.bufferToOscBundle(msg);
+                //convert bundle to normal osc message
+                //  this could be way better. now it only takes the first elements
+                oscMsg = { 'address':bundle.addresses[0] , 'data':bundle.datas[0], 'typeTags':bundle.typeTags[0] }; 
                 
-                case "/disconnect":
-                    dropClient(lookupClient(TYP_OSC,rinfo.address,rinfo.port),"disconnect by user");
-                break;
+            }
+
+            try{
+                switch(oscMsg.address){
+                    case "/connect":
+                        //If they send us the connect message, add them to the list of clients.
+                        dropClient( oscMsg.data[0], "duplicate name");
+                        
+                        clients[nextClientId]=[];
+                        clients[nextClientId][USER_PROTOCOL]=TYP_OSC;
+                        clients[nextClientId][USER_NAME]=oscMsg.data[0];
+                        clients[nextClientId][USER_IP]=rinfo.address;
+                        clients[nextClientId][USER_PORT_IN]=rinfo.port;
+                        if(oscMsg.data[1]>0){clients[nextClientId][USER_PORT_OUT]=oscMsg.data[1];} //the second parameter when logging in is an optional 'port to send to'.
+                        else{clients[nextClientId][USER_PORT_OUT]=rinfo.port;}
+                        clients[nextClientId][USER_LAST_MSG]=(new Date()).getTime();
+                        nextClientId++;
+                        debug('Added client '+oscMsg.data[0]+' (OSC@'+rinfo.address+':'+rinfo.port+', client #'+(nextClientId-1)+')');
+                    break;
                 
-                default:
-                    var from=lookupClient(TYP_OSC,rinfo.address,rinfo.port),
-                        to=lookupClientUsername(oscMsg.data.shift()),
-                        title=oscMsg.address,
-                        tt=oscMsg.typeTags.slice(1);
-                    msgRec(from,to,title,osgMsg.data,tt);
-                break;
+                    case "/disconnect":
+                        dropClient(lookupClient(TYP_OSC,rinfo.address,rinfo.port),"disconnect by user");
+                    break;
+                    
+                    default:
+                        var from=lookupClient(TYP_OSC,rinfo.address,rinfo.port),
+                            to=lookupClientUsername(oscMsg.data.shift()),
+                            title=oscMsg.address,
+                            tt=oscMsg.typeTags.slice(1);
+                            debug('osc message recieved:');
+                            msgRec(from,to,title,oscMsg.data,tt);
+                    break;
+                }
+            }
+            catch(e)
+            {
+                debug("ERROR IN INCOMING MESSAGE" + printObj(oscMsg) );
+                debug(e);
             }
         });
         
         //This is the bit of code that tells plasticSarcastic what ip and port we are.  Essentially our authentication/auto-discovery method for right now.
         oscServer.on('listening',function(){
-            var addr=oscServer.address();
+        //I had to comment this out so it would work locally without a network. CODY . 
+          /*  var addr=oscServer.address();
             debug('oscServer is listening on '+addr.address+':'+addr.port);
             
             var httpClient=http.createClient('80','plasticsarcastic.com');
@@ -229,6 +269,7 @@ function start(){
                     }
                 });
             });
+            */
         });
 
         //"Finalize" the OSC server.
@@ -248,12 +289,9 @@ function start(){
                 switch(title){
                     case "/connect":
                         //Add them to the clients list when they connect if the username is free.
-                        for(var i=0; i<clients.length; i++){
-                            if(clients[i][USER_NAME]==body[0]){
-                                wsServer.send(con.id,JSON.stringify({'from':'SYS','title':'/connect','body':[-1]}));
-                                return;
-                            }
-                        }
+                    
+                        dropClient(body[0],"duplicate name");
+
                         clients[nextClientId]=[];
                         clients[nextClientId][USER_PROTOCOL]=TYP_WS;
                         clients[nextClientId][USER_NAME]=body[0];
@@ -337,7 +375,7 @@ function start(){
         debug("tcpServer is listening on "+INTERNAL_IP+":"+TCP_PORT);
         */
         
-        setInterval(kickIdle,1000);
+       setInterval(kickIdle,1000);
     }
 }
 

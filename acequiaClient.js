@@ -11,6 +11,7 @@ function acConnect(uri,callback){
     }
     
     webSocket.onmessage=function(evt){
+        //console.log( evt);
         var msg=JSON.parse(evt.data);
         if(dataCallback){dataCallback(msg.from,msg.title,msg.body);}
     }
@@ -33,5 +34,6 @@ function acSend(to,title,body){
 
 
 function acReceive(callback){
+    
     dataCallback=callback;
 }
