@@ -1,0 +1,28 @@
+<html>
+    <head>
+        <script src='unitTests.js'></script>
+        <script type='text/javascript'>
+
+        </script>
+    </head>
+    <style>
+	#_socket_status_div {
+   width: 300px;
+   background-color: white;           /* Mozilla only */
+
+   }
+	</style>
+    <body bgcolor="black">
+    <div id='_socket_status_div'>socket <b>closed</b></div>
+    <br>
+    <a href=javascript:acTests.init() > OPEN CONNECTION.</a>
+    <br>
+    <a href=javascript:acTests.test1()   ">test 1. send malformed random stuff </a>
+    <br>
+       <a href=javascript:acTests.test2()   ">2. login 2 users </a>
+    <br>
+          <a href=javascript:acTests.test3()   ">3. login users then send malformed stuffs </a>
+    <br>
+    <form><textarea id='_console_out' cols=400 rows=400>___</textarea></form>
+    </body>
+</html>
