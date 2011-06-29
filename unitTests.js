@@ -49,9 +49,13 @@ function tests()
                 }
                 
                 this.webSocket.onmessage=function(evt){
-                    //dmessage( evt);
+                    //dmessage( JSON.stringify(evt));
                     var msg=JSON.parse(evt.data);
-                    if(this.dataCallback){this.dataCallback(msg.from,msg.title,msg.body);}
+                    console.log(msg);
+                    if(acTests.dataCallback)
+                    {
+                    	acTests.dataCallback(msg.from,msg.title,msg.body);
+                    }
                 }
                 
                 this.webSocket.onerror=function(evt){
@@ -60,10 +64,14 @@ function tests()
                 
                
             }
-            this.checkConnection = function()
+         
+            this.checkConnection = function( passMsg, failMsg)
             {
-            	
-            	
+             	
+            	if(this.webSocket.readyState == 1)
+            		dmessage(passMsg)
+            	else
+            		dmessage(failMsg);
             }
             this.test1 =  function()
             {
@@ -98,13 +106,15 @@ function tests()
         
             this.test2 =  function()
             {
-/*                    acSend('','/connect','tie372');
 
-                    function acSend(to,title,body){
-                        if(!(body instanceof Array)){body=new Array(body);}
-                        webSocket.send(JSON.stringify({"to":to,"title":title,"body":body}));
-                    }
-*/
+                this.dataCallback = function(to, cmd, body)
+                {
+                	
+                	if(cmd == '/getClients')
+                		{
+                		 dmessage( body.length + ' connected clients');
+                		}
+                }
                 //CONNECT 2 CLIENTS
                 this.webSocket.send(JSON.stringify({"to":'',"title":'/connect',"body":new Array('poop') }) );
             	if(this.webSocket.readyState != 1)
@@ -119,8 +129,13 @@ function tests()
             	if(this.webSocket.readyState != 1)
             		dmessage("test 2.3 failed");
            
-            	if(this.webSocket.readyState == 1)
-            		dmessage("test 2 passed")
+            	this.webSocket.send(JSON.stringify({"to":'',"title":'/getClients',"body":'' }) );
+
+                
+            
+                setTimeout("acTests.checkConnection('2 passed','2 failed')", 100);
+
+            	
             }
         
             this.test3 = function()
@@ -133,8 +148,19 @@ function tests()
             	this.webSocket.send(JSON.stringify({"to":'',"title":'/connect',"body":123 }) );
             	
             	//this.webSocket.send(1234324213412341234123445465465746547657465476547654765476576547654 );
+            	//this.webSocket.send( Number.MAX_VALUE);
+            	//this.webSocket.send( Number.NaN);
+                setTimeout("acTests.checkConnection('test 3 passed','test 3 failed')", 100);
+
+            }
+
+            this.test4 = function()
+            {
+            	this.webSocket.send(JSON.stringify({"to":'',"title":'/connect',"body":new Array('poop4test4') }) );
+            	this.webSocket.send(1234324213412341234123445465465746547657465476547654765476576547654 );
             	this.webSocket.send( Number.MAX_VALUE);
-            	this.webSocket.send( Number.NaN);
+            	this.webSocket.send( Number.NaN);//this crashes the node server
+                setTimeout("acTests.checkConnection('test 4 passed','test 4 failed')", 100);
             }
             this.send = function( obj )
             {
