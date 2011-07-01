@@ -162,6 +162,20 @@ function tests()
             	this.webSocket.send( Number.NaN);//this crashes the node server
                 setTimeout("acTests.checkConnection('test 4 passed','test 4 failed')", 100);
             }
+            this.test5 = function()
+            {
+            	//disconnect a lot of times
+            	this.webSocket.send(JSON.stringify({"to":'',"title":'/disconnect',"body":new Array() }) );
+            	this.webSocket.send(JSON.stringify({"to":'',"title":'/disconnect',"body":new Array() }) );
+            	this.webSocket.send(JSON.stringify({"to":'',"title":'/disconnect',"body":new Array() }) );
+            	this.webSocket.send(JSON.stringify({"to":'',"title":'/disconnect',"body":new Array() }) );
+            	this.webSocket.send(JSON.stringify({"to":'',"title":'/disconnect',"body":new Array() }) );
+            	this.webSocket.send(JSON.stringify({"to":'',"title":'/disconnect',"body":new Array() }) );
+            	this.webSocket.send(JSON.stringify({"to":'',"title":'/disconnect',"body":new Array() }) );
+            	this.webSocket.send(JSON.stringify({"to":'',"title":'/disconnect',"body":new Array() }) );
+            	this.webSocket.send(JSON.stringify({"to":'',"title":'/disconnect',"body":new Array() }) );
+                setTimeout("acTests.checkConnection('test 5 passed','test 5 failed')", 100);
+            }
             this.send = function( obj )
             {
                return( this.webSocket.send(JSON.stringify( obj) ));
