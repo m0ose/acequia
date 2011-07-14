@@ -312,6 +312,7 @@ function start(){
                             clientList.push(clients[i][USER_NAME]);
                         }
                         msgSndWs(from,"SYS","/getClients",clientList);
+                        //debug("get clients" + clientList);
                     break;
                     
                     

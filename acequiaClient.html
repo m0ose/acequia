@@ -1,63 +1,28 @@
 <html>
     <head>
-        <script src='acequiaClient.js'></script>
+        <script src='unitTests.js'></script>
         <script type='text/javascript'>
-            //TODO: have the correct server address be automatically obtained.
-            acConnect('ws://127.0.0.1:9091',function(){
-                acSend('','/connect','tie372');
-            });
-            
-            acReceive(function(from,command,body){
-    
-                console.log('message recieved');
-                //console.log(from);
-                //console.log(command);
-                //console.log( body)
-                switch(command){
-                    case '/connect':
-                        if(body[0]<0){
-                            alert('ERROR logging in');
-                        }
-                        else{
-                            alert('login successful.');
-                            acSend('','/getClients');
-                        }
-                    break;
-                    
-                    case '/getClients':
-                        console.log('Currently connected clients: '+body);
-                    break;
-                    case '/blobCoord':
-                        console.log("blob");
-                        //console.log(body);
-                        moveHand(body[0][0], body[1][0]);
-                    break;
-                    
-                    default:
-                        console.log( 'from ' + from + ' command ' + command + ' body ' + body); 
-                    break;
-                    
-                }
-            });
-            function moveHand(x1,y1)
-            {
-                //console.log('x'+x1+' y'+y1);
-                var d = document.getElementById('handIcon');
-                var w = document.width;
-                var h = document.height;
-                var left = x1 * w ; 
-                var top = y1 * h;
-                if( left < w - 120)
-                    d.style.left = left;
-                if( top < h - 120)
-                    d.style.top = top;
-            
-            
-            }
+
         </script>
     </head>
-    
+    <style>
+	#_socket_status_div {
+   width: 300px;
+   background-color: white;           /* Mozilla only */
+
+   }
+	</style>
     <body bgcolor="black">
-    <div id="handIcon" style='z-index:3;position:absolute;opacity:0.8;'><img src="trew_hand.gif"></div>
+    <div id='_socket_status_div'>socket <b>closed</b></div>
+    <br>
+    <a href=javascript:acTests.init() > OPEN CONNECTION.</a>
+    <br>
+    <a href=javascript:acTests.test1()   ">test 1. send malformed random stuff </a>
+    <br>
+       <a href=javascript:acTests.test2()   ">2. login 2 users </a>
+    <br>
+          <a href=javascript:acTests.test3()   ">3. login users then send malformed stuffs </a>
+    <br>
+    <form><textarea id='_console_out' cols=400 rows=400>___</textarea></form>
     </body>
 </html>
